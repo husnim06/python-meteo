@@ -1,9 +1,16 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
-import sys
 import os
+import sys
+
 import dotenv
+from fastapi import Depends, FastAPI
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
+
+from shared.database import create_tables, get_db
+from shared.models import WeatherData
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

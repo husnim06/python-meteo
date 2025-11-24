@@ -1,9 +1,9 @@
+import os
+
+import dotenv
 import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-import os
-from typing import Optional
-import dotenv
 
 dotenv.load_dotenv()
 

@@ -5,6 +5,7 @@ import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+
 dotenv.load_dotenv()
 
 API_URL = "http://localhost:8000"

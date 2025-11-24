@@ -6,10 +6,10 @@ import time
 import dotenv
 import serial
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from shared.database import SessionLocal
 from shared.models import WeatherData
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 dotenv.load_dotenv()

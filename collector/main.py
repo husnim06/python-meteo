@@ -2,10 +2,14 @@ import serial
 import json
 import time
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from models import WeatherData
 import os
 import dotenv
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from shared.database import SessionLocal
+from shared.models import WeatherData
 
 dotenv.load_dotenv()
 

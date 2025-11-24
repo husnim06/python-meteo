@@ -1,10 +1,14 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from database import get_db, create_tables
-from models import WeatherData
+import sys
 import os
 import dotenv
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from shared.database import get_db, create_tables
+from shared.models import WeatherData
 
 dotenv.load_dotenv()
 

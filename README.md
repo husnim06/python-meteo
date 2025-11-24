@@ -28,7 +28,7 @@
 ### 1. Клонируйте репозиторий
 
 ```bash
-git clone https://github.com/yourusername/python-meteo.git
+git clone https://github.com/husnim06/python-meteo.git
 cd python-meteo
 ```
 
@@ -69,19 +69,19 @@ DATABASE_URL=sqlite:///./weather.db
 **Терминал 1 - API сервер:**
 
 ```bash
-python api_main.py
+python api/main.py
 ```
 
 **Терминал 2 - Сборщик данных:**
 
 ```bash
-python collector_main.py
+python collector/main.py
 ```
 
 **Терминал 3 - Telegram бот:**
 
 ```bash
-python bot_main.py
+python bot/main.py
 ```
 
 ### API эндпоинты
@@ -99,13 +99,24 @@ python bot_main.py
 
 ```
 python-meteo/
-├── api_main.py       # FastAPI веб-сервер
-├── bot_main.py       # Telegram бот
-├── collector_main.py # Сборщик данных с Arduino
-├── database.py       # Конфигурация базы данных
-├── models.py         # SQLAlchemy модели
-├── arduino/          # Скетчи для Arduino
-└── requirements.txt  # Python зависимости
+├── api
+│   ├── __init__.py
+│   └── main.py
+├── arduino
+│   └── weather_station.ino
+├── bot
+│   ├── __init__.py
+│   └── main.py
+├── collector
+│   ├── __init__.py
+│   └── main.py
+├── LICENSE
+├── README.md
+├── shared
+│   ├── database.py
+│   ├── __init__.py
+│   ├── models.py
+└── requirements.txt
 ```
 
 ## 🔧 Конфигурация

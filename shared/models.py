@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, Float, DateTime
 from datetime import datetime
-from database import Base
+from .database import Base
 
 
 class WeatherData(Base):

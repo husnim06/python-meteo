@@ -1,134 +1,138 @@
+from contextlib import contextmanager
 import json
+import logging
 import os
 import sys
 import time
+from typing import Dict, Optional
 
 import dotenv
 import serial
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from shared.database import SessionLocal
+from shared.database import SessionLocal, create_tables
 from shared.models import WeatherData
-
 
 dotenv.load_dotenv()
 
+logger = logging.getLogger("data_collector")
 
-def read_arduino_data():
-    port = os.getenv("ARDUINO_PORT")
-    print(f"Подключение к порту: {port}")
 
-    try:
-        ser = serial.Serial(port, 9600, timeout=2)
-        print(f"Порт открыт: {ser}")
+class ArduinoReader:
+    def __init__(self, port: str, baudrate: int = 9600):
+        self.port = port
+        self.baudrate = baudrate
+        self.ser = None
 
-        # Даем Arduino время на инициализацию
-        time.sleep(2)
+    def __enter__(self):
+        """Контекстный менеджер для безопасной работы с портом"""
+        try:
+            self.ser = serial.Serial(self.port, self.baudrate, timeout=2)
+            time.sleep(4)  # Ожидание инициализации Arduino
+            self.ser.reset_input_buffer()
+            logger.info(f"Успешное подключение к порту {self.port}")
+            return self
+        except serial.SerialException as e:
+            logger.error(f"Ошибка подключения к {self.port}: {e}")
+            raise
 
-        # Очищаем буфер на случай старых данных
-        ser.reset_input_buffer()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Гарантированное закрытие порта"""
+        if self.ser and self.ser.is_open:
+            self.ser.close()
+            logger.info("Serial порт закрыт")
 
-        print("Ожидание данных от ардуино...")
+    def read_single_reading(self) -> Optional[Dict]:
+        """Читает одно показание с Arduino"""
+        if not self.ser or not self.ser.is_open:
+            return None
 
-        # Читаем несколько раз, чтобы поймать данные
         for attempt in range(5):
-            bytes_waiting = ser.in_waiting
-            print(f"Попытка {attempt + 1}: Байтов в буфере: {bytes_waiting}")
+            try:
+                if self.ser.in_waiting > 0:
+                    line = self.ser.readline().decode("utf-8", errors="ignore").strip()
 
-            if bytes_waiting > 0:
-                try:
-                    line = ser.readline().decode("utf-8", errors="ignore").strip()
-                    print(f"Получены необработанные данные: '{line}'")
+                    if not line:
+                        continue
 
-                    if line:
-                        # Пробуем разные варианты парсинга
-                        try:
-                            data = json.loads(line)
-                            print(f"JSON успешно проанализирован: {data}")
-                            return data
-                        except json.JSONDecodeError as e:
-                            print(f"Ошибка декодирования JSON: {e}")
-                            print(f"Строка которую не удалось преобразовать: '{line}'")
+                    data = json.loads(line)
 
-                            # Пробуем ручной парсинг для отладки
-                            if "temperature" in line and "humidity" in line:
-                                print(
-                                    "В тексте обнаружены температура/влажность, но недопустимый JSON."
-                                )
-                                # Попробуем извлечь числа из текста
-                                import re
+                    # Валидация структуры данных
+                    if all(key in data for key in ["temperature", "humidity"]):
+                        logger.debug(f"Успешно получены данные: {data}")
+                        return data
+                    else:
+                        logger.warning(f"Неполные данные: {data}")
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                logger.warning(f"Попытка {attempt+1}: Ошибка парсинга - {e}")
+            except Exception as e:
+                logger.error(f"Неожиданная ошибка при чтении: {e}")
 
-                                temp_match = re.search(
-                                    r"temperature[^0-9]*([0-9.]+)", line
-                                )
-                                humid_match = re.search(
-                                    r"humidity[^0-9]*([0-9.]+)", line
-                                )
-                                if temp_match and humid_match:
-                                    temp = float(temp_match.group(1))
-                                    humid = float(humid_match.group(1))
-                                    return {"temperature": temp, "humidity": humid}
-                except Exception as e:
-                    print(f"Ошибка чтения строки: {e}")
+            time.sleep(1)
 
-            time.sleep(1)  # Ждем между попытками
-
-        print("После 5 попыток не получено достоверных данных.")
-        return None
-
-    except serial.SerialException as e:
-        print(f"Ошибка порта: {e}")
-        return None
-    except Exception as e:
-        print(f"Неожиданная ошибка: {e}")
+        logger.error("Не удалось получить валидные данные после 5 попыток")
         return None
 
 
-def save_to_database(temperature: float, humidity: float):
+def save_weather_data(temperature: float, humidity: float):
+    """Сохраняет данные в базу с обработкой ошибок"""
     db = SessionLocal()
     try:
         record = WeatherData(temperature=temperature, humidity=humidity)
         db.add(record)
         db.commit()
-        print(f"Сохранено в бд: {temperature}°C, {humidity}%")
+        logger.info(f"Сохранено: {temperature}°C, {humidity}%")
     except Exception as e:
-        print(f"Ошибка бд: {e}")
+        logger.error(f"Ошибка сохранения в БД: {e}")
         db.rollback()
+        raise
     finally:
         db.close()
 
 
 def main():
-    print("Запуск сборщика данных...")
+    """Основная функция сбора данных"""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
 
-    # Сначала тестируем подключение
-    test_data = read_arduino_data()
+    # Создаем таблицы при первом запуске
+    create_tables()
 
-    if test_data:
-        print("Первоначальное подключение выполнено успешно!")
-        if "temperature" in test_data and "humidity" in test_data:
-            save_to_database(test_data["temperature"], test_data["humidity"])
-    else:
-        print("Данные не получены. Проверьте подключение Arduino и скетч.")
-        print(
-            "Убедитесь, что Arduino использует правильный скетч, который отправляет данные JSON."
-        )
+    port = os.getenv("ARDUINO_PORT")
+    if not port:
+        logger.error("ARDUINO_PORT не указан в .env")
+        return
 
-    # Основной цикл
-    print("Запуск основного цикла сбора...")
-    while True:
-        data = read_arduino_data()
-        if data and "temperature" in data and "humidity" in data:
-            save_to_database(data["temperature"], data["humidity"])
-        else:
-            print("Нет валидных данных, ждем...")
+    logger.info("Запуск сборщика метеоданных...")
 
-        time.sleep(30)  # Ждем 30 секунд между чтениями
+    try:
+        with ArduinoReader(port) as reader:
+            # Тестовое чтение
+            test_data = reader.read_single_reading()
+            if test_data:
+                logger.info("Тестовое подключение успешно")
+            else:
+                logger.warning("Тестовые данные не получены")
+
+            # Основной цикл
+            logger.info("Запуск основного цикла сбора (30 сек интервал)")
+            while True:
+                data = reader.read_single_reading()
+                if data:
+                    save_weather_data(data["temperature"], data["humidity"])
+                else:
+                    logger.warning("Нет валидных данных в этом цикле")
+
+                time.sleep(30)
+
+    except KeyboardInterrupt:
+        logger.info("Сборщик остановлен пользователем")
+    except Exception as e:
+        logger.error(f"Критическая ошибка: {e}")
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\nСборщик остановлен пользователем")
+    main()

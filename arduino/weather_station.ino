@@ -1,34 +1,36 @@
 #include "DHT.h"
+
+// Конфигурация
 #define DHTPIN 2
 #define DHTTYPE DHT11
+#define SERIAL_BAUD 9600
+#define READING_INTERVAL 2000
+#define SERIAL_STABILIZE_DELAY 2000
 
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(SERIAL_BAUD);
+  // Ждем стабилизации serial соединения
+  delay(SERIAL_STABILIZE_DELAY);
   dht.begin();
-  // Добавь индикацию, что все работает
-  Serial.println("Arduino started with DHT11");
+  Serial.println("{\"status\": \"Arduino DHT11 started\"}");
 }
 
 void loop() {
-  delay(2000);
-  
-  float humidity = dht.readHumidity();
-  float temperature = dht.readTemperature();
+  delay(READING_INTERVAL);
 
-  if (isnan(humidity) || isnan(temperature)) {
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+
+  if (isnan(temperature) || isnan(humidity)) {
     Serial.println("{\"error\": \"Sensor reading failed\"}");
     return;
   }
 
-  // Убедись, что отправляется ВАЛИДНЫЙ JSON
   Serial.print("{\"temperature\": ");
   Serial.print(temperature);
   Serial.print(", \"humidity\": ");
   Serial.print(humidity);
   Serial.println("}");
-  
-  // Добавь индикацию работы
-  Serial.println("Data sent");
 }

@@ -1,8 +1,8 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-sqlalchemy==2.0.23
-pyserial==3.5
-python-telegram-bot==20.7
-python-dotenv==1.0.0
-requests==2.31.0
+fastapi
+uvicorn
+sqlalchemy
+pyserial
+python-telegram-bot
+python-dotenv
+requests
 dotenv

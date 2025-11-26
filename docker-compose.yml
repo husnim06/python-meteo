@@ -1,0 +1,57 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    environment:
+      - DATABASE_URL
+      - API_HOST
+      - API_PORT
+    volumes:
+      - .:/app
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import requests; requests.get('http://localhost:8000/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  bot:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+    environment:
+      - API_URL=http://api:${API_PORT}
+      - BOT_TOKEN
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  collector:
+    build:
+      context: .
+      dockerfile: collector/Dockerfile
+    environment:
+      - DATABASE_URL
+      - ARDUINO_PORT
+    volumes:
+      - .:/app
+      - ${ARDUINO_PORT}:${ARDUINO_PORT}
+    devices:
+      - "${ARDUINO_PORT}:${ARDUINO_PORT}"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  data:

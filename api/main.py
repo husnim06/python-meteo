@@ -1,9 +1,8 @@
 import os
 import sys
-from typing import List
 
 import dotenv
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -13,15 +12,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from shared.database import create_tables, get_db
 from shared.models import WeatherData
 
+
 dotenv.load_dotenv()
 
 
 app = FastAPI(
     title="Weather Station API",
     description="API для получения данных о температуре и влажности",
-    version="1.1",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    version="1.1.0",
 )
 
 
@@ -29,13 +27,6 @@ class WeatherResponse(BaseModel):
     temperature: float
     humidity: float
     timestamp: str
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Создание таблиц при запуске приложения"""
-    create_tables()
-    print("Weather API запущен")
 
 
 @app.get("/")
@@ -66,8 +57,13 @@ async def get_current_weather(db: Session = Depends(get_db)):
         }
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Database error")
+
+
+@app.get("/health")
+async def healthcheck():
+    return {"status": "healthy"}
 
 
 def main():
@@ -75,6 +71,8 @@ def main():
 
     host = os.getenv("API_HOST", "0.0.0.0")
     port = int(os.getenv("API_PORT", 8000))
+
+    create_tables()
 
     uvicorn.run(app, host=host, port=port, log_level="info")
 

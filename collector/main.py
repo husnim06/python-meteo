@@ -55,14 +55,10 @@ class ArduinoReader:
                     if not line:
                         continue
 
-                    data = json.loads(line)
-
-                    # Валидация структуры данных
-                    if all(key in data for key in ["temperature", "humidity"]):
-                        logger.debug(f"Успешно получены данные: {data}")
+                    data = self.safe_json_parse(line)
+                    if data:
                         return data
-                    else:
-                        logger.warning(f"Неполные данные: {data}")
+
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
                 logger.warning(f"Попытка {attempt+1}: Ошибка парсинга - {e}")
             except Exception as e:
@@ -72,6 +68,36 @@ class ArduinoReader:
 
         logger.error("Не удалось получить валидные данные после 5 попыток")
         return None
+
+    def safe_json_parse(self, line: str) -> Optional[Dict]:
+        """Безопасный парсинг JSON с валидацией"""
+        try:
+            # Очистка строки
+            line = "".join(char for char in line if char.isprintable()).strip()
+            if not line:
+                return None
+
+            data = json.loads(line)
+
+            # Валидация структуры и значений
+            if not all(key in data for key in ["temperature", "humidity"]):
+                return None
+
+            if not isinstance(data["temperature"], (int, float)) or not isinstance(
+                data["humidity"], (int, float)
+            ):
+                return None
+
+            # Валидация физических пределов
+            if not (-50 <= data["temperature"] <= 60 and 0 <= data["humidity"] <= 100):
+                logger.warning(f"Некорректные значения: {data}")
+                return None
+
+            return data
+
+        except (json.JSONDecodeError, UnicodeDecodeError, TypeError) as e:
+            logger.warning(f"Ошибка парсинга JSON: {e}")
+            return None
 
 
 def save_weather_data(temperature: float, humidity: float):

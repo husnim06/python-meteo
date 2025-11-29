@@ -134,7 +134,9 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"   Макс: {stats['max_temperature']:.1f}°C\n"
                 f"   Мин: {stats['min_temperature']:.1f}°C\n\n"
                 f"💧 *Влажность:*\n"
-                f"   Средняя: {stats['avg_humidity']:.1f}%\n\n"
+                f"   Средняя: {stats['avg_humidity']:.1f}%\n"
+                f"   Макс: {stats['max_humidity']:.1f}%\n"
+                f"   Мин: {stats['min_humidity']:.1f}%\n\n"
                 f"📈 *Всего записей:* {stats['records_count']}"
             )
         else:

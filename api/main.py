@@ -8,6 +8,7 @@ from typing import Dict, List
 
 import dotenv
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import matplotlib
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
@@ -29,6 +30,8 @@ app = FastAPI(
     description="API для получения данных о температуре и влажности",
     version="1.1.0",
 )
+
+app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
 # Настройка логирования
 logging.basicConfig(
@@ -87,7 +90,9 @@ async def get_weather_history(
 ):
     """Получить историю данных с статистикой"""
     try:
-        since = datetime.now(timezone.utc) - timedelta(hours=hours)
+        since = datetime.now(timezone.utc).replace(tzinfo=timezone.utc) - timedelta(
+            hours=hours
+        )
 
         records = (
             db.query(WeatherData)
@@ -101,13 +106,15 @@ async def get_weather_history(
 
         # Расчет статистики
         temps: list = [r.temperature for r in records]
-        humids = [r.humidity for r in records]
+        humids: list = [r.humidity for r in records]
 
         stats = {
             "avg_temperature": sum(temps) / len(temps),
             "max_temperature": max(temps),
             "min_temperature": min(temps),
             "avg_humidity": sum(humids) / len(humids),
+            "max_humidity": max(humids),
+            "min_humidity": min(humids),
             "records_count": len(records),
         }
 
@@ -136,7 +143,9 @@ async def generate_temperature_chart(
 ):
     """Генерация графика в base64"""
     try:
-        since = datetime.now(timezone.utc) - timedelta(hours=hours)
+        since = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).replace(
+            tzinfo=timezone.utc
+        ) - timedelta(hours=hours)
 
         records = (
             db.query(WeatherData)
@@ -235,6 +244,8 @@ async def generate_temperature_chart(
     except Exception as e:
         logger.error(f"Error generating chart: {e}")
         raise HTTPException(status_code=500, detail="Chart generation error")
+    finally:
+        plt.close("all")
 
 
 @app.get("/health")

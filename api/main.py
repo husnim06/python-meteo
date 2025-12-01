@@ -27,7 +27,7 @@ dotenv.load_dotenv()
 app = FastAPI(
     title="Weather Station API",
     description="API для получения данных о температуре и влажности",
-    version="1.1.0",
+    version="1.2.0",
 )
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"])

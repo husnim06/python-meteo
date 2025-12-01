@@ -12,15 +12,9 @@ services:
     volumes:
       - .:/app
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import requests; requests.get('http://${API_HOST}:${API_PORT}/health')",
-        ]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-f", "http://${API_HOST}:${API_PORT}/health"]
+      interval: 10s
+      timeout: 5s
       retries: 3
     restart: unless-stopped
 

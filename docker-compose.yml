@@ -17,7 +17,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import requests; requests.get('${API_URL}/health')",
+          "import requests; requests.get('http://${API_HOST}:${API_PORT}/health')",
         ]
       interval: 30s
       timeout: 10s
@@ -29,7 +29,8 @@ services:
       context: .
       dockerfile: bot/Dockerfile
     environment:
-      - API_URL=http://api:${API_PORT}
+      - API_HOST=api
+      - API_PORT
       - BOT_TOKEN
     depends_on:
       api:

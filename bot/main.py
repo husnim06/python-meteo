@@ -1,8 +1,8 @@
-from io import BytesIO
+import base64
 import logging
 import os
+from io import BytesIO
 from typing import Dict, Optional
-import base64
 
 import dotenv
 import requests
@@ -17,7 +17,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_HOST = os.getenv("API_HOST")
+API_PORT = os.getenv("API_PORT")
+API_URL = f"http://{API_HOST}:{API_PORT}"
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 

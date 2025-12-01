@@ -1,17 +1,16 @@
 import base64
-from datetime import datetime, timedelta, timezone
 import io
 import logging
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
 import dotenv
+import matplotlib
+import matplotlib.pyplot as plt
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import matplotlib
-from matplotlib.lines import Line2D
-import matplotlib.pyplot as plt
 from pydantic import BaseModel
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -86,7 +85,8 @@ async def get_current_weather(db: Session = Depends(get_db)):
 
 @app.get("/api/history", response_model=WeatherHistoryResponse)
 async def get_weather_history(
-    db: Session = Depends(get_db), hours: int = 24  # По умолчанию последние 24 часа
+    db: Session = Depends(get_db),
+    hours: int = 24,  # По умолчанию последние 24 часа
 ):
     """Получить историю данных с статистикой"""
     try:
@@ -256,8 +256,13 @@ async def healthcheck():
 def main():
     import uvicorn
 
-    host = os.getenv("API_HOST", "0.0.0.0")
-    port = int(os.getenv("API_PORT", 8000))
+    host = os.getenv("API_HOST")
+    port = os.getenv("API_PORT")
+
+    if not host or not port:
+        logger.error("API_HOST/API_PORT environment variable is required")
+        return
+    port = int(port)
 
     create_tables()
 

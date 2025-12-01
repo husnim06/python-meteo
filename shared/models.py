@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Dict
 
-from sqlalchemy import Column, DateTime, Float, Integer
-from sqlalchemy import CheckConstraint
+from sqlalchemy import CheckConstraint, Column, DateTime, Float, Integer
 
 from .database import Base
 

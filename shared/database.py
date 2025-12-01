@@ -23,10 +23,10 @@ def create_engine_with_retry(database_url: str, max_retries: int = 3) -> Engine:
                 pool_pre_ping=True,  # Проверка соединения перед использованием
             )
 
-            with engine.connect() as conn:
+            with engine.connect():
                 pass
             return engine
-        except Exception as e:
+        except Exception:
             if attempt == max_retries - 1:
                 raise
             time.sleep(2**attempt)

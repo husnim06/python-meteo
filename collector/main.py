@@ -60,7 +60,7 @@ class ArduinoReader:
                         return data
 
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
-                logger.warning(f"Попытка {attempt+1}: Ошибка парсинга - {e}")
+                logger.warning(f"Попытка {attempt + 1}: Ошибка парсинга - {e}")
             except Exception as e:
                 logger.error(f"Неожиданная ошибка при чтении: {e}")
 
